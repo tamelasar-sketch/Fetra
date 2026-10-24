@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fetra Log Books</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: a desk of A4 paper sheets, one per log, filtered by how often Hamdy fills them; print gives one sheet per page */
+:root{
+  --desk:#e6ebe8; --desk-fg:#1d2a22; --desk-muted:#5a6b62;
+  --chip:#ffffff; --chip-on:#14605a; --chip-on-fg:#ffffff; --line-ui:#c9d3ce;
+  /* the paper is a real object: it stays white with dark ink in both themes */
+  --paper:#ffffff; --ink:#1a1f1c; --ink-soft:#56615b; --rule:#3a433e; --rule-soft:#b9c2bd;
+  --band:#14605a; --band-fg:#ffffff; --tint:#eef4f2; --gold:#e8bf3a;
+  --p-red:#d33a2c; --p-amber:#e59a16; --p-green:#2f8f4e;
+  --f-ar:"IBM Plex Sans Arabic", "Geeza Pro", "Noto Sans Arabic", Tahoma, sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --desk:#141a17; --desk-fg:#e6ece8; --desk-muted:#9aaba2; --chip:#1f2824; --chip-on:#e8bf3a; --chip-on-fg:#1d2a22; --line-ui:#33403a; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --desk:#141a17; --desk-fg:#e6ece8; --desk-muted:#9aaba2; --chip:#1f2824; --chip-on:#e8bf3a; --chip-on-fg:#1d2a22; --line-ui:#33403a; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--desk);color:var(--desk-fg);font-family:var(--f-ar);font-size:14px;line-height:1.5}
+.top{padding-block:20px 8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1000px;margin:0 auto;display:grid;gap:10px}
+.top h1{margin:0;font-size:1.5rem;font-weight:700;text-wrap:balance}
+.top p{margin:0;color:var(--desk-muted);max-width:65ch}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{font:inherit;font-weight:600;border:1px solid var(--line-ui);background:var(--chip);color:var(--desk-fg);border-radius:999px;padding:6px 14px;cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--chip-on);color:var(--chip-on-fg);border-color:var(--chip-on)}
+.chips button:focus-visible,.printbtn:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.printbtn{font:inherit;font-weight:700;border:0;background:var(--chip-on);color:var(--chip-on-fg);border-radius:10px;padding:8px 16px;cursor:pointer;justify-self:start}
+.toc{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.85rem;color:var(--desk-muted)}
+.toc a{color:inherit}
+.desk{display:grid;gap:28px;justify-items:center;padding-block:12px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:100%;overflow-x:auto;display:grid;gap:6px}
+.cap{font-size:.85rem;color:var(--desk-muted);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.cap b{color:var(--desk-fg)}
+
+/* ---------- the sheet ---------- */
+.sheet{width:210mm;min-height:297mm;background:var(--paper);color:var(--ink);padding:9mm 9mm 8mm;box-shadow:0 1px 2px rgba(0,0,0,.12),0 8px 24px rgba(0,0,0,.10);display:flex;flex-direction:column;gap:3mm;font-size:9.5pt;line-height:1.35}
+.sheet.land{width:297mm;min-height:210mm}
+.hd{display:grid;grid-template-columns:auto 1fr auto;gap:4mm;align-items:center;border-bottom:2px solid var(--band);padding-bottom:2.5mm}
+.mark{display:grid;place-items:center;width:15mm;height:15mm;border-radius:3.5mm;background:var(--band);color:var(--band-fg);font-weight:700;font-size:13pt;line-height:1}
+.mark small{display:block;font-size:6pt;font-weight:500;letter-spacing:.06em;margin-top:.6mm;font-family:system-ui,sans-serif}
+.ttl h2{margin:0;font-size:15pt;font-weight:700;line-height:1.2}
+.ttl .sub{color:var(--ink-soft);font-size:8.5pt}
+.code{text-align:left;font-size:8pt;color:var(--ink-soft);display:grid;gap:1mm;justify-items:end}
+.code b{font-family:ui-monospace,Menlo,monospace;font-size:10pt;color:var(--ink);border:1.5px solid var(--ink);border-radius:1.5mm;padding:.4mm 2mm;direction:ltr}
+.meta{display:flex;flex-wrap:wrap;gap:2mm 6mm;font-size:9pt}
+.meta span{display:inline-flex;align-items:flex-end;gap:1.5mm}
+.meta i{font-style:normal;display:inline-block;border-bottom:1px dotted var(--rule);min-width:24mm;height:5mm}
+.meta i.w{min-width:40mm}
+.sec{display:grid;gap:1.4mm}
+.sec h3{margin:0;font-size:10pt;font-weight:700;display:flex;gap:2mm;align-items:center}
+.sec h3::before{content:"";width:2.2mm;height:2.2mm;background:var(--band);border-radius:.5mm}
+.sec h3 em{font-style:normal;font-weight:400;color:var(--ink-soft);font-size:8pt}
+table.log{width:100%;border-collapse:collapse;table-layout:fixed}
+table.log th,table.log td{border:1px solid var(--rule);padding:.6mm 1mm;vertical-align:middle;text-align:center}
+table.log th{background:var(--tint);font-weight:600;font-size:8pt;line-height:1.2}
+table.log th small{display:block;font-weight:400;color:var(--ink-soft);font-size:6.8pt}
+table.log td{height:var(--rh,7mm)}
+table.log td.l{text-align:right;font-weight:500;font-size:8.5pt}
+table.log td.l small{color:var(--ink-soft);font-weight:400;font-size:7pt;margin-inline-start:1mm}
+table.log tr.tot td{background:var(--tint);font-weight:700;height:7mm}
+table.log tr.grp td{background:var(--band);color:var(--band-fg);font-weight:700;text-align:right;height:5.5mm;font-size:8.5pt}
+td.sh{background:repeating-linear-gradient(135deg,transparent 0 2mm,#e7ece9 2mm 2.6mm)}
+.box{display:inline-block;width:3mm;height:3mm;border:1px solid var(--ink);border-radius:.6mm;vertical-align:-.4mm;margin-inline-end:.8mm}
+.ticks{font-size:7.4pt;display:flex;flex-wrap:nowrap;white-space:nowrap;gap:1.6mm;justify-content:center}
+.dot{display:inline-block;width:3.6mm;height:3.6mm;border-radius:50%;border:2px solid currentColor;vertical-align:-.7mm}
+.pr-red{color:var(--p-red)} .pr-amber{color:var(--p-amber)} .pr-green{color:var(--p-green)}
+.legend{border:1px solid var(--rule-soft);border-radius:1.5mm;padding:1.6mm 2.4mm;font-size:7.8pt;display:flex;flex-wrap:wrap;gap:.8mm 4mm;background:#fbfcfb}
+.legend b{font-weight:700}
+.legend .c{font-family:ui-monospace,Menlo,monospace;direction:ltr;unicode-bidi:isolate;font-size:7.6pt;background:var(--tint);padding:0 1mm;border-radius:.8mm}
+.opblk{border:1.5px solid var(--rule);border-radius:2mm;padding:1.4mm 2.4mm;display:grid;gap:1.1mm}
+.opblk .n{font-weight:700;color:var(--band)}
+.line{display:flex;flex-wrap:wrap;align-items:center;gap:1.4mm 3mm;font-size:8.8pt}
+.line .lb{font-weight:700}
+.fill{display:inline-block;border:1px solid var(--rule);border-radius:1mm;height:6mm;min-width:var(--w,16mm);vertical-align:middle}
+.blank{display:inline-block;border-bottom:1px dotted var(--rule);min-width:var(--w,30mm);height:5mm}
+.circ{display:inline-block;border:1px solid var(--rule-soft);border-radius:999px;padding:.2mm 2.2mm;font-size:8.2pt;white-space:nowrap}
+.circ small{color:var(--ink-soft);font-size:6.8pt}
+.pg{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2mm}
+.pg .circ{border-radius:2mm;display:flex;justify-content:space-between;gap:1mm;padding:.6mm 1.6mm}
+.pg .circ .c{font-family:ui-monospace,Menlo,monospace;direction:ltr;font-size:7.4pt}
+.totbox{display:grid;grid-template-columns:repeat(4,1fr);gap:2mm}
+.totbox div{border:1.5px solid var(--rule);border-radius:1.5mm;padding:1mm 2mm;min-height:11mm;font-size:8pt;font-weight:600;background:var(--tint)}
+.totbox small{display:block;font-weight:400;color:var(--ink-soft);font-size:6.8pt}
+.code b.ser{display:inline-flex;align-items:flex-end;gap:1mm;font-size:13pt;padding:.8mm 2.4mm}
+.code b.ser i{display:inline-block;width:20mm;border-bottom:1.5px solid var(--ink);height:6mm}
+.bbs{display:grid;grid-template-columns:1fr 1fr;gap:3mm}
+.bb{border:1.5px solid var(--rule);border-radius:2mm;min-height:24mm;padding:2mm 3mm;display:flex;flex-direction:column;justify-content:space-between;font-weight:700;font-size:10.5pt}
+.bb small{font-weight:400;color:var(--ink-soft);font-size:8pt}
+.bb em{font-style:normal;font-weight:400;font-size:8pt;color:var(--ink-soft)}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
+.cols2 > *{min-width:0}
+.ft{margin-top:auto;display:grid;grid-template-columns:1fr auto;gap:3mm;align-items:end;border-top:1px solid var(--rule-soft);padding-top:2mm;font-size:8pt;color:var(--ink-soft)}
+.ft .sig{display:flex;gap:6mm}
+.ft .sig span{display:inline-flex;gap:1.5mm;align-items:flex-end;color:var(--ink)}
+.ft .sig i{display:inline-block;border-bottom:1px dotted var(--rule);width:28mm;height:5mm}
+.ft .cam{display:flex;gap:2mm;align-items:center}
+.ft .cam svg{flex:none}
+.num{font-variant-numeric:tabular-nums}
+.ltr{direction:ltr;unicode-bidi:isolate}
+
+@page{size:A4 portrait;margin:0}
+@page land{size:A4 landscape;margin:0}
+@media print{
+  html,body{background:#fff}
+  .top,.cap{display:none!important}
+  .desk{padding:0;gap:0;display:block}
+  .wrap{overflow:visible;display:block}
+  .wrap[hidden]{display:none!important}
+  .sheet{box-shadow:none;break-after:page;page-break-after:always;margin:0;min-height:296mm}
+  .sheet.land{page:land;min-height:209mm}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+@media (prefers-reduced-motion:no-preference){ .chips button{transition:background .15s,color .15s} }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>دفاتر تسجيل فترة · مطبوعات حمدي</h1>
+  <p>ورق يتطبع ويتملي باليد، وبعدين يتصور ويتبعت. كل ورقة لها كود في الركن عشان نعرف نسجلها في التطبيق. الأكواد والأصناف هي نفس اللي في التطبيق.</p>
+  <div class="chips" role="group" aria-label="نوع الورقة">
+    <button type="button" id="f-all" data-f="all" aria-pressed="true">الكل</button>
+    <button type="button" id="f-d" data-f="d" aria-pressed="false">يومي</button>
+    <button type="button" id="f-w" data-f="w" aria-pressed="false">أسبوعي</button>
+    <button type="button" id="f-m" data-f="m" aria-pressed="false">شهري</button>
+    <button type="button" id="f-h" data-f="h" aria-pressed="false">يتعلق في المخزن</button>
+  </div>
+  <button type="button" class="printbtn" id="printBtn" hidden>اطبع الورق الظاهر</button>
+  <nav class="toc" id="toc" aria-label="الأوراق"></nav>
+</header>
+<main class="desk" id="desk"></main>
+
+<script>
+/* ---------- data from the Fetra app (farm-ledger, Oct 2026) ---------- */
+const PLOTS = [
+  ["TF-G1","عز / عوفة","OFA"],["TF-G2","عز / الخور","KHR"],["TF-G3","جودة","GWD"],["TF-G4","جزيرة ليلى وتيا","LYT"],
+  ["TF-M1","المهندسة تربيعة ١","MT1"],["TF-M2","المهندسة تربيعة ٢","MT2"],["TF-M3","المهندسة تربيعة ٣","MT3"],
+  ["TF-R1","نادين","NAD"],["TF-R2","عمر","OMR"],["TF-R3","تيمور","TAI"],["TF-R4","تيمور التحتانية","TFT"],["TF-R5","حتة الفدان ونص","P15"],["TF-T1","تميم","TAM"]
+];
+const OTHER = [["TF-H1","الحاج أحمد الكبيرة (بطاطس)"],["TF-H2","الحاج أحمد الصغيرة (قمح)"],["TF-K1","الخزام / الدراوية"],["TV","الجرن (فترة فيتا)"]];
+const CREWS = ["السيد بسنديلة","أحمد محمد رمضان","السيد عبده","رضا جمعة","محمد علي","زكية (ستات)"];
+const DAYS = ["السبت","الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة"];
+const STORE = [
+  ["أسمدة",[["يوريا ٤٦٪","شيكارة ٥٠ك"],["نترات نشادر ٣٣٫٥٪","شيكارة ٥٠ك"],["سلفات نشادر","شيكارة ٥٠ك"],["سلفات بوتاسيوم ٥٠٪","شيكارة ٥٠ك"],["سلفات بوتاسيوم محبب","شيكارة ٢٥ك"],["نترات كالسيوم","شيكارة ٥٠ك"],["سلفات ماغنسيوم","شيكارة ٥٠ك"],["سلفات ماغنسيوم","شيكارة ٢٥ك"],["سوبر فوسفات محبب","شيكارة ٥٠ك"],["سوبر فوسفات ناعم ١٥٪","شيكارة ٥٠ك"],["كبريت زراعي","شيكارة ٥٠ك"],["جبس زراعي","طن"],["فوسفات صخري","طن"],["حمض فوسفوريك","طن"],["ماب","كجم"],["سباخ","نقلة"],["سباخ بلدي متحلل","م³"]]],
+  ["عناصر صغرى ورش ورقي",[["منجنيز مخلبي","كجم"],["زنك مخلبي","كجم"],["حديد مخلبي","كجم"],["كالسيوم بورون","لتر"],["بورون ١٥٪","لتر"],["نترات بوتاسيوم","لتر"],["فسفور","كجم"]]],
+  ["رويال جرين · عضوي",[["نوفابلس","جركن ٢٠ لتر"],["نوفاكيو","لتر"]]],
+  ["تقاوي وشتلات",[["تقاوي بطاطس سبونتا","طن"],["شتلة موز نسيج","شتلة"],["تقاوي قمح","كجم"],["تقاوي برسيم بلدي","كجم"],["تقاوي فول صويا","كجم"]]],
+  ["مبيدات",[["مبيد فطري","لتر"],["مبيد حشري","لتر"],["مبيد حشائش","لتر"],["مبيد نيماتودا","كجم"]]],
+  ["أكياس وتربيط الموز",[["أكياس تكييس السباطات","كيس"],["شرائط ألوان للسباطات","لفة"],["دوبارة تربيط","كجم"],["سنادات","قطعة"],["تاجات باركود","قطعة"]]],
+  ["عدد ومعدات",[["سكاكين ومناجل","قطعة"],["عتلة نقر","قطعة"],["فؤوس","قطعة"],["رشاشة ظهر","قطعة"],["موتور رش","قطعة"],["عربيات يد","قطعة"],["جوانتي وكمامات وبوت","طقم"],["ميزان","قطعة"]]]
+];
+const FEEDS = [["سيلاج ذرة (السيلو)","طن"],["علف مركز هيرمان / كسب","طن"],["تبن قمح","نقلة"],["قش رز مكبوس","بالة"],["دريس برسيم / علف جاف","بالة"],["أملاح وملح وبريمكس","كجم"]];
+
+/* ---------- helpers ---------- */
+const box = t => `<span><span class="box"></span>${t}</span>`;
+const ticks = arr => `<div class="ticks">${arr.map(box).join("")}</div>`;
+const rows = (n, cells, h) => Array.from({length:n},(_,i)=>`<tr${h?` style="--rh:${h}"`:""}>${cells(i)}</tr>`).join("");
+const empty = n => "<td></td>".repeat(n);
+const head = (cols) => `<thead><tr>${cols.map(c=>{ const [t,s,w]=Array.isArray(c)?c:[c]; return `<th${w?` style="width:${w}"`:""}>${t}${s?`<small>${s}</small>`:""}</th>`; }).join("")}</tr></thead>`;
+const meta = items => `<div class="meta">${items.map(([l,w])=>`<span>${l}<i class="${w||""}"></i></span>`).join("")}</div>`;
+const plotLegend = (withQ) => `<div class="legend"><b>أكواد القطع:</b>${PLOTS.map(([c,n,q])=>`<span><span class="c">${c}</span> ${n}${withQ?` · <span class="c">${q}</span>`:""}</span>`).join("")}${OTHER.map(([c,n])=>`<span><span class="c">${c}</span> ${n}</span>`).join("")}</div>`;
+const cam = `<svg width="14" height="12" viewBox="0 0 14 12" aria-hidden="true"><rect x=".7" y="2.4" width="12.6" height="8.9" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="6.8" r="2.4" fill="none" stroke="currentColor" stroke-width="1.2"/><path d="M4.6 2.4 5.6.8h2.8l1 1.6" fill="none" stroke="currentColor" stroke-width="1.2"/></svg>`;
+const sheet = ({id, kind, code, title, sub, metaItems, body, sendNote, land, serial}) => ({id, kind, code, title, land, html:`
+  <article class="sheet${land?" land":""}" aria-label="${title}">
+    <header class="hd">
+      <div class="mark" aria-hidden="true">فترة<small>FETRA</small></div>
+      <div class="ttl"><h2>${title}</h2><div class="sub">${sub}</div></div>
+      <div class="code">${serial?`<b class="ser">FT-<i></i></b><span>رقم البيعة = آخر رقم بعته واتساب + ١</span>`:`<b>${code}</b>`}<span>${kind==="d"?"يومي · ورقة لكل يوم":kind==="w"?"أسبوعي":kind==="m"?"شهري":"يتعلق في المخزن"}</span>${serial?"":`<span>ورقة رقم: ......</span>`}</div>
+    </header>
+    ${meta(metaItems)}
+    ${body}
+    <footer class="ft">
+      <div class="cam">${cam}<span>${sendNote}</span></div>
+      <div class="sig"><span>كتبه:<i></i></span><span>راجعه:<i></i></span></div>
+    </footer>
+  </article>`});
+const weekMeta = [["الأسبوع من يوم السبت:","w"],["إلى يوم الجمعة:","w"],["اسم الكاتب: حمدي",""]];
+const monthMeta = [["شهر:",""],["سنة:",""],["اسم الكاتب: حمدي",""]];
+const sendW = "صوّر الورقة كاملة ومفرودة في نور كويس، وابعتها واتساب كل يوم جمعة. لو فيه حاجة مستعجلة صوّرها في نفس اليوم.";
+const sendM = "صوّر الورقة كاملة ومفرودة في نور كويس، وابعتها واتساب آخر يوم في الشهر.";
+const priorityBox = (n) => `<div class="sec"><h3>أعمال مطلوبة <em>علّم الدايرة: <span class="dot pr-red"></span> عاجل (النهارده أو بكره) · <span class="dot pr-amber"></span> قريب (الأسبوع ده) · <span class="dot pr-green"></span> روتيني</em></h3>
+  <table class="log">${head([["الأولوية","",'22mm'],"الشغل المطلوب",["المكان","كود القطعة",'26mm'],["مطلوب قبل يوم","",'26mm'],["اتعمل؟","",'16mm']])}
+  <tbody>${rows(n,()=>`<td><span class="dot pr-red"></span> <span class="dot pr-amber"></span> <span class="dot pr-green"></span></td><td></td><td></td><td></td><td><span class="box"></span></td>`)}</tbody></table></div>`;
+
+/* ---------- the sheets ---------- */
+const SHEETS = [];
+
+/* D1. banana sale, one sheet per cutting day (date left blank: Hamdy keeps a stack) */
+/* plot sizes from the Google Maps project (Fetra-all-plots.kml), feddan */
+const FED = {OFA:"5.23",KHR:"3.41",GWD:"3.87",LYT:"22.30",MT1:"6.36",MT2:"4.21",MT3:"4.10",NAD:"4.57",OMR:"5.25",TAI:"1.98",TFT:"0.54",P15:"1.90",TAM:"2.40"};
+const dayMeta = [["التاريخ:   ......../......../ ٢٠......",""],["اليوم:",""],["اسم الكاتب: حمدي",""]];
+const sendD = "صوّر الورقة كاملة ومفرودة في نفس اليوم وابعتها واتساب. صوّر البونات معاها.";
+const sendS = "اكتب رقم البيعة فوق، وصوّر الورقة كاملة في نفس اليوم وابعتها واتساب مع صورة البون.";
+/* serial: Hamdy writes FT-<last number he sent on WhatsApp + 1> */
+const plotGrid = `<div class="sec"><h3>القطع <em>اسم القطعة وكودها ومساحتها بالفدان من خريطة جوجل · لينكات الخريطة على جروب الواتساب</em></h3>
+  <div class="pg">${PLOTS.map(([c,n,q])=>`<span class="circ"><span>${n} <small class="ltr">${FED[q]}</small> <small>فدان</small></span><span class="c">${q}</span></span>`).join("")}</div></div>`;
+const cutCost = `<div class="sec"><h3>مصاريف القطيع</h3>
+  <table class="log">${head(["البيان",["عدد النقلات","",'26mm'],["سعر النقلة","جنيه",'26mm'],["المبلغ","جنيه",'26mm']])}
+  <tbody><tr><td class="l">قطيع دبابة <small>عادة ١٬٠٠٠ – ١٬٢٥٠</small></td>${empty(3)}</tr><tr><td class="l">قطيع عربية دبل <small>عادة ٢٬٠٠٠</small></td>${empty(3)}</tr><tr><td class="l">سباطات مرفوضة أو تالفة <small>العدد في خانة النقلات</small></td><td></td><td class="sh"></td><td class="sh"></td></tr></tbody></table></div>`;
+const truckKey = `<div class="legend"><b>العربية:</b><span><b>د</b> دبابة</span><span><b>ن</b> نقل</span><span><b>ب</b> عربية دبل</span><span style="margin-inline-start:auto">الصافي = القائم × ٠٫٨ لو مش في البون · متوسط وزن السباطة = القائم ÷ عدد السباطات</span></div>`;
+const bigBox = (t,u,ex) => `<div class="bb"><span>${t}${u?` <small>${u}</small>`:""}</span>${ex?`<em>${ex}</em>`:""}</div>`;
+SHEETS.push(sheet({id:"sale-1", kind:"d", code:"FT-", serial:true, title:"بيع الموز · عربية واحدة", sub:"ورقة ليوم فيه عربية واحدة بس (دبابة أو نقل)",
+  metaItems:dayMeta, sendNote:sendS, body:`
+  ${plotGrid}
+  <div class="sec"><h3>العربية</h3>
+  <div class="bbs">
+    ${bigBox("القطعة","اكتب اسم القطعة")}${bigBox("العربية","علّم واحدة",`<span class="ticks"><span><span class="box"></span>دبابة</span><span><span class="box"></span>نقل</span><span><span class="box"></span>دبل</span></span>`)}
+    ${bigBox("عدد السباطات")}${bigBox("الوزن القائم","كجم")}
+    ${bigBox("الوزن الصافي","كجم","لو مش في البون: القائم × ٠٫٨")}${bigBox("متوسط وزن السباطة","كجم","القائم ÷ عدد السباطات")}
+    ${bigBox("سعر الكيلو","جنيه","مثلاً ٢٣")}${bigBox("إجمالي البيع","جنيه")}
+  </div></div>
+  ${cutCost}`}));
+SHEETS.push(sheet({id:"sale-4", kind:"d", code:"FT-", serial:true, title:"بيع الموز · لحد ٤ عربيات", sub:"ورقة ليوم فيه أكتر من عربية · سطر لكل عربية والإجمالي تحت",
+  metaItems:dayMeta, sendNote:sendS, body:`
+  ${plotGrid}
+  <div class="sec"><h3>البيع <em>سطر لكل عربية</em></h3>
+  <table class="log">${head([["القطعة","اكتب اسم القطعة",'34mm'],["العربية","د / ن / ب",'15mm'],["عدد السباطات","",'18mm'],["الوزن القائم","كجم",'22mm'],["الوزن الصافي","كجم",'22mm'],["متوسط وزن السباطة","كجم",'20mm'],["سعر الكيلو","جنيه، مثلاً ٢٣",'22mm'],["إجمالي البيع","جنيه",""]])}
+  <tbody>${rows(4,()=>empty(8),"15mm")}
+  <tr class="tot" style="--rh:13mm"><td class="l" colspan="2">إجمالي اليوم</td><td></td><td></td><td></td><td></td><td style="font-size:7pt;vertical-align:top;text-align:right">متوسط سعر الكيلو</td><td></td></tr></tbody></table>
+  ${truckKey}</div>
+  ${cutCost}`}));
+
+/* D2. daily field work, simple: circle the job, count the crew, rates and transport */
+const OPS_CIRC = ["نقد","فرز","توريق","تربيط","تكييس","عزيق","شيل عفش","لم عفش","شيل عيان","شيل جدول","حش جدول","رش","تسميد","ري","زراعة","قطيع موز"];
+const TRANS = [["بدون",""],["العربية","٧٠٠"],["تروسيكل","٥٠٠"],["العربية + تروسيكل","١٢٠٠"]];
+const opBlock = i => `<div class="opblk">
+  <div class="line"><span class="lb n">عملية ${["١","٢","٣","٤"][i]}</span><span class="lb">اسم الأرض:</span><span class="blank" style="--w:46mm"></span><span class="lb">كود القطعة:</span><span class="blank" style="--w:22mm"></span></div>
+  <div class="line"><span class="lb">نوع الشغل، علّم:</span>${OPS_CIRC.map(o=>`<span class="circ">${o}</span>`).join("")}<span class="circ">تانية: <span class="blank" style="--w:20mm;height:4mm"></span></span></div>
+  <div class="line"><span class="lb">رجالة:</span><span class="fill" style="--w:12mm"></span><span>× يومية</span><span class="fill" style="--w:15mm"></span><span>=</span><span class="fill" style="--w:20mm"></span>
+    <span class="lb" style="margin-inline-start:4mm">ستات:</span><span class="fill" style="--w:12mm"></span><span>× يومية</span><span class="fill" style="--w:15mm"></span><span>=</span><span class="fill" style="--w:20mm"></span></div>
+  <div class="line"><span class="lb">المواصلات:</span>${TRANS.map(([t,p])=>`<span class="circ">${t}${p?` <small>${p}</small>`:""}</span>`).join("")}<span>المبلغ</span><span class="fill" style="--w:16mm"></span>
+    <span class="lb" style="margin-inline-start:auto">إجمالي العملية:</span><span class="fill" style="--w:24mm;border-width:2px"></span><span>جنيه</span></div>
+  <div class="line"><span class="lb">مواد اتصرفت:</span><span class="blank" style="--w:80mm"></span><span class="lb">الحالة:</span><span class="circ">تم</span><span class="circ">جاري</span></div>
+</div>`;
+SHEETS.push(sheet({id:"ops-d", kind:"d", code:"FT-D2", title:"يومية الشغل في الأرض", sub:"ورقة لكل يوم · علّم نوع الشغل واكتب العدد واليومية · يومية الرجالة عادة ٢٥٠ والستات ٢٠٠",
+  metaItems:dayMeta, sendNote:sendD.replace(" صوّر البونات معاها.",""), body:`
+  ${[0,1,2,3].map(opBlock).join("")}
+  <div class="sec"><h3>إجمالي اليوم</h3>
+  <div class="totbox"><div>عدد الرجالة</div><div>عدد الستات</div><div>المواصلات<small>جنيه</small></div><div>إجمالي المدفوع<small>جنيه</small></div></div></div>
+  <div class="sec"><h3>مطلوب بكره <em>علّم الدايرة: <span class="dot pr-red"></span> عاجل · <span class="dot pr-amber"></span> قريب · <span class="dot pr-green"></span> روتيني</em></h3>
+  <table class="log">${head([["الأولوية","",'22mm'],"الشغل المطلوب",["اسم الأرض","",'40mm']])}
+  <tbody>${rows(2,()=>`<td><span class="dot pr-red"></span> <span class="dot pr-amber"></span> <span class="dot pr-green"></span></td><td></td><td></td>`)}</tbody></table></div>`}));
+
+/* 1. cattle, weekly */
+SHEETS.push(sheet({id:"cattle-w", kind:"w", code:"FV-W1", title:"سجل الماشية اليومي", sub:"فترة فيتا · الجرن · عجول عرباوي · الراعي: محمد رمضان",
+  metaItems:[...weekMeta,["عدد الرؤوس أول الأسبوع:",""]], sendNote:sendW, body:`
+  <div class="sec"><h3>الأكل والمية والنظافة كل يوم <em>اكتب الكمية اللي اتصرفت فعلاً</em></h3>
+  <table class="log">${head([["اليوم","",'17mm'],["التاريخ","",'14mm'],["عدد الرؤوس","",'12mm'],["علف هيرمان / كسب","كجم"],["سيلاج","كجم"],["تبن","نقلة"],["قش رز","بالة"],["دراوية / برسيم","حش أخضر"],["مية شرب","مقطورة"],["تنضيف الجرن","✓"],["ملاحظات","",'36mm']])}
+  <tbody>${DAYS.map(d=>`<tr style="--rh:8.6mm"><td class="l">${d}</td>${empty(10)}</tr>`).join("")}
+  <tr class="tot"><td class="l">المجموع</td><td class="sh"></td><td class="sh"></td>${empty(6)}<td class="sh"></td><td class="sh"></td></tr></tbody></table></div>
+  <div class="sec"><h3>حالات مرضية وعلاج <em>رقم الأذن من التاج الأصفر</em></h3>
+  <table class="log">${head([["التاريخ","",'16mm'],["رقم الأذن","",'18mm'],"الأعراض",["العلاج / الدوا والجرعة","",'52mm'],["الدكتور","",'24mm'],["التكلفة","جنيه",'18mm'],["خف؟","",'12mm']])}
+  <tbody>${rows(5,()=>empty(6)+`<td><span class="box"></span></td>`)}</tbody></table></div>
+  <div class="cols2">
+    <div class="sec"><h3>تحصين وتجريع هذا الأسبوع</h3>
+    <table class="log">${head([["التاريخ","",'16mm'],"التحصين / الدوا",["عدد الرؤوس","",'16mm'],["التكلفة","",'16mm']])}
+    <tbody>${rows(2,()=>empty(4))}</tbody></table>
+    <div class="legend"><b>الجاي في البرنامج:</b><span>حمى قلاعية تنشيطية ٢٥ أكتوبر</span><span>بسترللا وطفيليات دم كل ٣ شهور تقريباً</span></div></div>
+    <div class="sec"><h3>دخول وخروج رؤوس</h3>
+    <table class="log">${head([["التاريخ","",'16mm'],["النوع","",'34mm'],["العدد","",'12mm'],["رقم الأذن / ملاحظة",""]])}
+    <tbody>${rows(3,()=>`<td></td><td>${ticks(["نفوق","بيع","شراء"])}</td><td></td><td></td>`)}</tbody></table></div>
+  </div>
+  <div class="sec"><h3>وارد علف ومشتريات الجرن <em>هيرمان، كسب، تبن، قش رز، سيلاج، أملاح، دوا، مقطورة مية، نقلة تراب</em></h3>
+  <table class="log">${head([["التاريخ","",'16mm'],["الصنف","",'50mm'],["الكمية","",'18mm'],["الوحدة","",'18mm'],["السعر","جنيه",'20mm'],"من مين / رقم البون"])}
+  <tbody>${rows(4,()=>empty(6))}</tbody></table></div>`}));
+
+/* 2. field operations, weekly */
+SHEETS.push(sheet({id:"ops-w", kind:"w", code:"FT-W2", title:"سجل العمليات اليومية في الأرض", sub:"فترة تيرا · موز، بطاطس، قمح، برسيم ودراوية",
+  metaItems:weekMeta, sendNote:sendW, body:`
+  ${plotLegend(false)}
+  <div class="legend"><b>العمليات:</b><span>نقد</span><span>فرز</span><span>توريق</span><span>تربيط</span><span>تكييس</span><span>عزيق</span><span>شيل عفش</span><span>شيل عيان</span><span>شيل جدول</span><span>حش جدول</span><span>رش</span><span>تسميد</span><span>ري</span><span>زراعة</span><span>قطيع موز</span><span>حرث / ليزر</span><span>تطهير مراوي</span></div>
+  <div class="sec"><h3>الشغل اللي اتعمل <em>سطر لكل شغلانة في كل قطعة</em></h3>
+  <table class="log">${head([["التاريخ","",'14mm'],["القطعة","كود",'17mm'],["الربع","من اللافتة",'20mm'],["العملية","",'30mm'],["رجالة","",'11mm'],["ستات","",'11mm'],["الريس","",'22mm'],["المواد المستخدمة والكمية","سماد / رش / أكياس"],["التكلفة","جنيه",'16mm'],["الحالة","",'17mm']])}
+  <tbody>${rows(15,()=>empty(9)+`<td>${ticks(["تم","جاري"])}</td>`,"7.2mm")}</tbody></table></div>
+  ${priorityBox(5)}`}));
+
+/* 3. workers in / out, weekly */
+SHEETS.push(sheet({id:"crew-w", kind:"w", code:"FT-W3", title:"كشف حضور وانصراف العمال", sub:"الأنفار باليومية والعمال الثابتين · يومية الرجالة ٢٥٠ والستات ٢٠٠ جنيه",
+  metaItems:weekMeta, sendNote:sendW, body:`
+  <div class="legend"><b>الريّسين:</b>${CREWS.map(c=>`<span>${c}</span>`).join("")}<b style="margin-inline-start:3mm">المواصلات:</b><span>العربية ٧٠٠</span><span>تروسيكل ٥٠٠</span></div>
+  <div class="sec"><h3>الأنفار باليومية <em>سطر لكل ريس في كل يوم</em></h3>
+  <table class="log">${head([["التاريخ","",'14mm'],["الريس","",'26mm'],["القطعة","كود",'17mm'],["العملية","",'26mm'],["رجالة","عدد",'11mm'],["ستات","عدد",'11mm'],["دخول","الساعة",'12mm'],["خروج","الساعة",'12mm'],["المواصلات","",'25mm'],["المبلغ","جنيه",'16mm'],["توقيع الريس",""]])}
+  <tbody>${rows(18,()=>empty(8)+`<td>${ticks(["عربية","تروسيكل"])}</td>`+empty(2),"7.4mm")}
+  <tr class="tot"><td class="l" colspan="4">مجموع الأسبوع</td>${empty(2)}<td class="sh"></td><td class="sh"></td><td class="sh"></td><td></td><td class="sh"></td></tr></tbody></table></div>
+  <div class="sec"><h3>العمال الثابتين <em>اكتب في كل يوم: ح حاضر · غ غايب · ج إجازة · ن نص يوم</em></h3>
+  <table class="log">${head([["الاسم","",'38mm'],["الشغلانة","",'24mm'],...DAYS.map(d=>[d,"",""]),["أيام الحضور","",'16mm']])}
+  <tbody><tr><td class="l">محمد رمضان</td><td>راعي الماشية</td>${empty(8)}</tr><tr><td class="l">حمدي</td><td></td>${empty(8)}</tr>${rows(5,()=>empty(10))}</tbody></table></div>`}));
+
+/* 4. sick banana trees, weekly round */
+SHEETS.push(sheet({id:"sick-w", kind:"w", code:"FT-W4", title:"جولة الموز العيان", sub:"شجر مريض اتلقى واتشال · قطعة قطعة وربع ربع · الكود مكتوب على اللافتة في الأرض",
+  metaItems:[...weekMeta,["تاريخ الجولة:",""]], sendNote:"صوّر الورقة، وصوّر كل شجرة عيانة جنب لافتة الربع بتاعها. ابعت الكل واتساب يوم الجولة.", body:`
+  ${plotLegend(true)}
+  <div class="legend"><b>اكتب حرف العَرَض:</b><span><b>ذ</b> ذبول وورق مايل (فيوزاريوم)</span><span><b>ص</b> اصفرار ورق</span><span><b>ف</b> تبرقش وخطوط (فيروس)</span><span><b>ع</b> عفن في القلب أو الكورمة</span><span><b>ن</b> نيماتودا وجذر ضعيف</span><span><b>ك</b> كسر من الريح أو التقل</span><span><b>خ</b> حاجة تانية، اكتبها</span></div>
+  <div class="sec"><h3>الشجر العيان</h3>
+  <table class="log">${head([["التاريخ","",'14mm'],["القطعة","كود",'17mm'],["كود الربع","مثال OFA-F01-Q1",'32mm'],["شجر عيان","عدد",'15mm'],["اتشال","عدد",'13mm'],["العَرَض","حرف",'16mm'],["اتعالج بإيه","رش / عزل / جير"],["اتزرع بداله؟","",'22mm'],["صورة","",'12mm']])}
+  <tbody>${rows(18,()=>empty(7)+`<td>${ticks(["أيوه","لأ"])}</td><td><span class="box"></span></td>`,"7.4mm")}
+  <tr class="tot"><td class="l" colspan="3">مجموع الجولة</td><td></td><td></td><td class="sh" colspan="4"></td></tr></tbody></table></div>
+  <div class="sec"><h3>ملاحظات الجولة <em>قطعة محتاجة دكتور؟ مكان فيه مية واقفة؟</em></h3>
+  <table class="log"><tbody>${rows(3,()=>"<td></td>")}</tbody></table></div>`}));
+
+/* 5. banana sales, monthly */
+SHEETS.push(sheet({id:"sales-m", kind:"m", code:"FT-M1", title:"مبيعات الموز", sub:"كل عربية خرجت من الأرض · القائم من الميزان، والصافي ٨٠٪ من القائم لو مش مكتوب في البون",
+  metaItems:monthMeta, sendNote:sendM+" صوّر البونات كمان.", body:`
+  ${plotLegend(false)}
+  <div class="legend"><b>العربية، اكتب حرف:</b><span><b>د</b> دبابة</span><span><b>ن</b> نقل</span><span><b>ب</b> عربية دبل</span></div>
+  <table class="log">${head([["التاريخ","",'13mm'],["القطعة","كود",'16mm'],["العربية","حرف",'12mm'],["عدد السباطات","",'15mm'],["القائم","كجم",'16mm'],["الصافي","كجم",'16mm'],["سعر الكيلو","جنيه",'14mm'],["الإجمالي","جنيه",'19mm'],["التاجر",""],["اتدفع","جنيه",'16mm'],["الباقي","جنيه",'16mm'],["رقم البون","",'14mm']])}
+  <tbody>${rows(20,()=>empty(12),"7.6mm")}
+  <tr class="tot"><td class="l" colspan="3">مجموع الشهر</td><td></td><td></td><td></td><td class="sh"></td><td></td><td class="sh"></td><td></td><td></td><td class="sh"></td></tr></tbody></table>
+  <div class="cols2">
+    <div class="sec"><h3>مصاريف القطيع والنقل</h3>
+    <table class="log">${head(["البيان",["العدد","",'18mm'],["المبلغ","جنيه",'22mm']])}
+    <tbody><tr><td class="l">قطيع موز دبابة <small>١٬٠٠٠ – ١٬٢٥٠ للنقلة</small></td><td></td><td></td></tr><tr><td class="l">قطيع عربية دبل <small>٢٬٠٠٠ للنقلة</small></td><td></td><td></td></tr><tr><td class="l">حاجة تانية</td><td></td><td></td></tr></tbody></table></div>
+    <div class="sec"><h3>فلوس مستلمة</h3>
+    <table class="log">${head([["التاريخ","",'16mm'],"من مين",["المبلغ","جنيه",'22mm'],["استلمها","",'22mm']])}
+    <tbody>${rows(3,()=>empty(4))}</tbody></table></div>
+  </div>`}));
+
+/* 6. cattle, monthly summary */
+SHEETS.push(sheet({id:"cattle-m", kind:"m", code:"FV-M2", title:"ملخص الماشية الشهري ومخزن العلف", sub:"فترة فيتا · العدد والوزن والتحصينات وجرد العلف آخر الشهر",
+  metaItems:monthMeta, sendNote:sendM, body:`
+  <div class="cols2">
+    <div class="sec"><h3>عدد القطيع</h3>
+    <table class="log"><tbody>${[["أول الشهر"],["شراء"],["مولود"],["نفوق"],["بيع"],["آخر الشهر"]].map(([t])=>`<tr><td class="l">${t}</td><td style="width:26mm"></td></tr>`).join("")}</tbody></table></div>
+    <div class="sec"><h3>الوزن <em>عينة ١٠ رؤوس على الميزان</em></h3>
+    <table class="log">${head([["رقم الأذن","",'22mm'],["الوزن","كجم"],["رقم الأذن","",'22mm'],["الوزن","كجم"]])}
+    <tbody>${rows(5,()=>empty(4))}<tr class="tot"><td class="l" colspan="2">متوسط الوزن</td><td colspan="2"></td></tr></tbody></table></div>
+  </div>
+  <div class="sec"><h3>جرد مخزن العلف آخر الشهر <em>عِد الموجود فعلاً، مش من الحساب</em></h3>
+  <table class="log">${head(["الصنف",["الوحدة","",'22mm'],["الموجود أول الشهر","",'22mm'],["وارد","",'18mm'],["الجرد الفعلي آخر الشهر","",'26mm'],["يكفي كام يوم؟","",'20mm'],["محتاج طلب؟","",'22mm']])}
+  <tbody>${FEEDS.map(([n,u])=>`<tr><td class="l">${n}</td><td>${u}</td>${empty(4)}<td>${ticks(["أيوه","لأ"])}</td></tr>`).join("")}</tbody></table></div>
+  <div class="sec"><h3>التحصينات والعلاج في الشهر</h3>
+  <table class="log">${head([["التاريخ","",'16mm'],"التحصين / العلاج",["عدد الرؤوس","",'18mm'],["الدكتور","",'26mm'],["التكلفة","جنيه",'20mm'],["الجرعة الجاية","تاريخ",'22mm']])}
+  <tbody>${rows(5,()=>empty(6))}</tbody></table></div>
+  <div class="sec"><h3>مصاريف الجرن في الشهر</h3>
+  <table class="log">${head(["البيان",["المبلغ","جنيه",'26mm'],"البيان",["المبلغ","جنيه",'26mm']])}
+  <tbody><tr><td class="l">علف مركز هيرمان</td><td></td><td class="l">مقطورات مية</td><td></td></tr><tr><td class="l">تبن وقش رز</td><td></td><td class="l">شهرية الراعي <small>٥٬٠٠٠</small></td><td></td></tr><tr><td class="l">حش دراوية وبرسيم</td><td></td><td class="l">تنضيف وجير وتراب</td><td></td></tr><tr><td class="l">دكتور ودوا</td><td></td><td class="l">كهربا ومية</td><td></td></tr><tr class="tot"><td class="l" colspan="3">مجموع الشهر</td><td></td></tr></tbody></table></div>`}));
+
+/* 7a / 7b. warehouse count, monthly, two pages */
+const countTable = groups => `<table class="log">${head(["الصنف",["الوحدة","",'24mm'],["رصيد أول الشهر","",'20mm'],["وارد","",'17mm'],["منصرف","",'17mm'],["الجرد الفعلي","",'20mm'],["فرق","",'14mm'],["ملاحظات","",'34mm']])}
+  <tbody>${groups.map(([g,items])=>`<tr class="grp"><td colspan="8">${g}</td></tr>`+items.map(([n,u])=>`<tr style="--rh:6mm"><td class="l">${n}</td><td>${u}</td>${empty(6)}</tr>`).join("")).join("")}
+  ${rows(2,()=>empty(8),"6mm")}</tbody></table>`;
+SHEETS.push(sheet({id:"store-m1", kind:"m", code:"FT-M3a", title:"جرد المخزن الشهري · ١ من ٢", sub:"مخزن فترة تيرا · الأسمدة والعناصر الصغرى والعضوي والتقاوي",
+  metaItems:[...monthMeta,["تاريخ الجرد:",""]], sendNote:sendM+" الجرد بالعد على الرف، والفرق = الحساب ناقص الجرد.", body:countTable(STORE.slice(0,4))}));
+SHEETS.push(sheet({id:"store-m2", kind:"m", code:"FT-M3b", title:"جرد المخزن الشهري · ٢ من ٢", sub:"مخزن فترة تيرا · المبيدات وأكياس الموز والعدد",
+  metaItems:[...monthMeta,["تاريخ الجرد:",""]], sendNote:sendM, body:countTable(STORE.slice(4)) + `
+  <div class="sec"><h3>محتاجين نشتري <em>علّم الأولوية</em></h3>
+  <table class="log">${head([["الأولوية","",'22mm'],"الصنف",["الكمية","",'24mm'],["لإمتى","",'24mm'],["لأنهي محصول","",'34mm']])}
+  <tbody>${rows(6,()=>`<td><span class="dot pr-red"></span> <span class="dot pr-amber"></span> <span class="dot pr-green"></span></td>${empty(4)}`)}</tbody></table></div>`}));
+
+/* 8. warehouse movement card, hang on the wall */
+SHEETS.push(sheet({id:"store-h", kind:"h", code:"ST-H1", title:"كارت حركة المخزن", sub:"يتعلق على باب المخزن · أي حاجة تدخل أو تخرج تتكتب هنا قبل ما تتشال",
+  metaItems:[["المخزن:",""],["من تاريخ:",""],["إلى تاريخ:",""]], sendNote:"لما الكارت يخلص: صوّره وابعته واتساب، وعلّق كارت جديد. الكارت القديم يتحفظ في المكتب.", body:`
+  <div class="legend"><b>خطوات:</b><span>١. اكتب التاريخ والصنف</span><span>٢. علّم وارد أو منصرف</span><span>٣. الكمية بالوحدة اللي على الشيكارة</span><span>٤. منصرف لأنهي قطعة وأنهي شغلانة</span><span>٥. اللي استلم يمضي</span></div>
+  <table class="log">${head([["التاريخ","",'14mm'],["الصنف","",'36mm'],["","",'26mm'],["الكمية","",'14mm'],["الوحدة","",'16mm'],["من مين / لفين","مورد أو كود القطعة",'26mm'],["لأنهي شغلانة","",""],["اسم المستلم","",'24mm'],["توقيع","",'16mm']]).replace("<th style=\"width:26mm\"></th>","<th style=\"width:26mm\">وارد / منصرف</th>")}
+  <tbody>${rows(30,()=>`<td></td><td></td><td>${ticks(["وارد","منصرف"])}</td>`+empty(6),"7.3mm")}</tbody></table>`}));
+
+/* ---------- render ---------- */
+const desk = document.getElementById("desk"), toc = document.getElementById("toc");
+const KIND = {d:"يومي", w:"أسبوعي", m:"شهري", h:"يتعلق في المخزن"};
+desk.innerHTML = SHEETS.map(s=>`<section class="wrap" id="${s.id}" data-k="${s.kind}"><div class="cap"><b>${s.title}</b><span class="ltr">${s.code}</span><span>${KIND[s.kind]}</span></div>${s.html}</section>`).join("");
+toc.innerHTML = SHEETS.map(s=>`<a href="#${s.id}">${s.title}</a>`).join("");
+const setF = f => { document.querySelectorAll(".chips button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.f===f)));
+  document.querySelectorAll(".wrap").forEach(w=>{ w.hidden = !(f==="all" || w.dataset.k===f); }); };
+document.querySelectorAll(".chips button").forEach(b=>b.addEventListener("click",()=>setF(b.dataset.f)));
+/* print works on the GitHub Pages copy; the in-app preview can't open the print dialog */
+if (/github\.io$|^localhost$|^127\./.test(location.hostname) || location.protocol==="file:") {
+  const p=document.getElementById("printBtn"); p.hidden=false; p.addEventListener("click",()=>window.print());
+}
+</script>
+</body>
+</html>
