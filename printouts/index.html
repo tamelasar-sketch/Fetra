@@ -198,14 +198,14 @@ const SHEETS = [];
 const FED = {OFA:"5.23",KHR:"3.41",GWD:"3.87",LYT:"22.30",MT1:"6.36",MT2:"4.21",MT3:"4.10",NAD:"4.57",OMR:"5.25",TAI:"1.98",TFT:"0.54",P15:"1.90",TAM:"2.40"};
 const dayMeta = [["التاريخ:   ......../......../ ٢٠......",""],["اليوم:",""],["اسم الكاتب: حمدي",""]];
 const sendD = "صوّر الورقة كاملة ومفرودة في نفس اليوم وابعتها واتساب. صوّر البونات معاها.";
-const sendS = "اكتب رقم البيعة فوق، وصوّر الورقة كاملة في نفس اليوم وابعتها واتساب مع صورة البون.";
+const sendS = "اكتب رقم البيعة فوق، وصوّر الورقة كاملة في نفس اليوم وابعتها واتساب.";
 /* serial: Hamdy writes FT-<last number he sent on WhatsApp + 1> */
 const plotGrid = `<div class="sec"><h3>القطع <em>اسم القطعة وكودها ومساحتها بالفدان من خريطة جوجل · لينكات الخريطة على جروب الواتساب</em></h3>
   <div class="pg">${PLOTS.map(([c,n,q])=>`<span class="circ"><span>${n} <small class="ltr">${FED[q]}</small> <small>فدان</small></span><span class="c">${q}</span></span>`).join("")}</div></div>`;
 const cutCost = `<div class="sec"><h3>مصاريف القطيع</h3>
   <table class="log">${head(["البيان",["عدد النقلات","",'26mm'],["سعر النقلة","جنيه",'26mm'],["المبلغ","جنيه",'26mm']])}
   <tbody><tr><td class="l">قطيع دبابة <small>عادة ١٬٠٠٠ – ١٬٢٥٠</small></td>${empty(3)}</tr><tr><td class="l">قطيع عربية دبل <small>عادة ٢٬٠٠٠</small></td>${empty(3)}</tr><tr><td class="l">سباطات مرفوضة أو تالفة <small>العدد في خانة النقلات</small></td><td></td><td class="sh"></td><td class="sh"></td></tr></tbody></table></div>`;
-const truckKey = `<div class="legend"><b>العربية:</b><span><b>د</b> دبابة</span><span><b>ن</b> نقل</span><span><b>ب</b> عربية دبل</span><span style="margin-inline-start:auto">الصافي = القائم × ٠٫٨ لو مش في البون · متوسط وزن السباطة = القائم ÷ عدد السباطات</span></div>`;
+const truckKey = `<div class="legend"><b>العربية:</b><span><b>د</b> دبابة</span><span><b>ن</b> نقل</span><span><b>ب</b> عربية دبل</span><span style="margin-inline-start:auto">الصافي = القائم × ٠٫٨ · متوسط وزن السباطة = القائم ÷ عدد السباطات</span></div>`;
 const bigBox = (t,u,ex) => `<div class="bb"><span>${t}${u?` <small>${u}</small>`:""}</span>${ex?`<em>${ex}</em>`:""}</div>`;
 SHEETS.push(sheet({id:"sale-1", kind:"d", code:"FT-", serial:true, title:"بيع الموز · عربية واحدة", sub:"ورقة ليوم فيه عربية واحدة بس (دبابة أو نقل)",
   metaItems:dayMeta, sendNote:sendS, body:`
@@ -214,7 +214,7 @@ SHEETS.push(sheet({id:"sale-1", kind:"d", code:"FT-", serial:true, title:"بيع
   <div class="bbs">
     ${bigBox("القطعة","اكتب اسم القطعة")}${bigBox("العربية","علّم واحدة",`<span class="ticks"><span><span class="box"></span>دبابة</span><span><span class="box"></span>نقل</span><span><span class="box"></span>دبل</span></span>`)}
     ${bigBox("عدد السباطات")}${bigBox("الوزن القائم","كجم")}
-    ${bigBox("الوزن الصافي","كجم","لو مش في البون: القائم × ٠٫٨")}${bigBox("متوسط وزن السباطة","كجم","القائم ÷ عدد السباطات")}
+    ${bigBox("الوزن الصافي","كجم","القائم × ٠٫٨")}${bigBox("متوسط وزن السباطة","كجم","القائم ÷ عدد السباطات")}
     ${bigBox("سعر الكيلو","جنيه","مثلاً ٢٣")}${bigBox("إجمالي البيع","جنيه")}
   </div></div>
   ${cutCost}`}));
