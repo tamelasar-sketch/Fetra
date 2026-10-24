@@ -76,6 +76,20 @@ td.sh{background:repeating-linear-gradient(135deg,transparent 0 2mm,#e7ece9 2mm 
 .legend{border:1px solid var(--rule-soft);border-radius:1.5mm;padding:1.6mm 2.4mm;font-size:7.8pt;display:flex;flex-wrap:wrap;gap:.8mm 4mm;background:#fbfcfb}
 .legend b{font-weight:700}
 .legend .c{font-family:ui-monospace,Menlo,monospace;direction:ltr;unicode-bidi:isolate;font-size:7.6pt;background:var(--tint);padding:0 1mm;border-radius:.8mm}
+.opblk{border:1.5px solid var(--rule);border-radius:2mm;padding:1.4mm 2.4mm;display:grid;gap:1.1mm}
+.opblk .n{font-weight:700;color:var(--band)}
+.line{display:flex;flex-wrap:wrap;align-items:center;gap:1.4mm 3mm;font-size:8.8pt}
+.line .lb{font-weight:700}
+.fill{display:inline-block;border:1px solid var(--rule);border-radius:1mm;height:6mm;min-width:var(--w,16mm);vertical-align:middle}
+.blank{display:inline-block;border-bottom:1px dotted var(--rule);min-width:var(--w,30mm);height:5mm}
+.circ{display:inline-block;border:1px solid var(--rule-soft);border-radius:999px;padding:.2mm 2.2mm;font-size:8.2pt;white-space:nowrap}
+.circ small{color:var(--ink-soft);font-size:6.8pt}
+.pg{display:grid;grid-template-columns:repeat(4,1fr);gap:1.2mm}
+.pg .circ{border-radius:2mm;display:flex;justify-content:space-between;gap:1mm;padding:.6mm 1.6mm}
+.pg .circ .c{font-family:ui-monospace,Menlo,monospace;direction:ltr;font-size:7.4pt}
+.totbox{display:grid;grid-template-columns:repeat(4,1fr);gap:2mm}
+.totbox div{border:1.5px solid var(--rule);border-radius:1.5mm;padding:1mm 2mm;min-height:11mm;font-size:8pt;font-weight:600;background:var(--tint)}
+.totbox small{display:block;font-weight:400;color:var(--ink-soft);font-size:6.8pt}
 .cols2{display:grid;grid-template-columns:1fr 1fr;gap:4mm}
 .cols2 > *{min-width:0}
 .ft{margin-top:auto;display:grid;grid-template-columns:1fr auto;gap:3mm;align-items:end;border-top:1px solid var(--rule-soft);padding-top:2mm;font-size:8pt;color:var(--ink-soft)}
@@ -108,6 +122,7 @@ td.sh{background:repeating-linear-gradient(135deg,transparent 0 2mm,#e7ece9 2mm 
   <p>ورق يتطبع ويتملي باليد، وبعدين يتصور ويتبعت. كل ورقة لها كود في الركن عشان نعرف نسجلها في التطبيق. الأكواد والأصناف هي نفس اللي في التطبيق.</p>
   <div class="chips" role="group" aria-label="نوع الورقة">
     <button type="button" id="f-all" data-f="all" aria-pressed="true">الكل</button>
+    <button type="button" id="f-d" data-f="d" aria-pressed="false">يومي</button>
     <button type="button" id="f-w" data-f="w" aria-pressed="false">أسبوعي</button>
     <button type="button" id="f-m" data-f="m" aria-pressed="false">شهري</button>
     <button type="button" id="f-h" data-f="h" aria-pressed="false">يتعلق في المخزن</button>
@@ -152,7 +167,7 @@ const sheet = ({id, kind, code, title, sub, metaItems, body, sendNote, land}) =>
     <header class="hd">
       <div class="mark" aria-hidden="true">فترة<small>FETRA</small></div>
       <div class="ttl"><h2>${title}</h2><div class="sub">${sub}</div></div>
-      <div class="code"><b>${code}</b><span>${kind==="w"?"أسبوعي":kind==="m"?"شهري":"يتعلق في المخزن"}</span><span>ورقة رقم: ......</span></div>
+      <div class="code"><b>${code}</b><span>${kind==="d"?"يومي · ورقة لكل يوم":kind==="w"?"أسبوعي":kind==="m"?"شهري":"يتعلق في المخزن"}</span><span>ورقة رقم: ......</span></div>
     </header>
     ${meta(metaItems)}
     ${body}
@@ -171,6 +186,50 @@ const priorityBox = (n) => `<div class="sec"><h3>أعمال مطلوبة <em>ع�
 
 /* ---------- the sheets ---------- */
 const SHEETS = [];
+
+/* D1. banana sale, one sheet per cutting day (date left blank: Hamdy keeps a stack) */
+const FED = {OFA:6,KHR:4,GWD:4,LYT:23,MT1:7,MT2:5,MT3:4,NAD:5,OMR:6,TAI:2,TFT:1,P15:2,TAM:3};
+const dayMeta = [["التاريخ:   ......../......../ ٢٠......",""],["اليوم:",""],["اسم الكاتب: حمدي",""]];
+const sendD = "صوّر الورقة كاملة ومفرودة في نفس اليوم وابعتها واتساب. صوّر البونات معاها.";
+SHEETS.push(sheet({id:"sale-d", kind:"d", code:"FT-D1", title:"يومية بيع الموز", sub:"ورقة لكل يوم قطيع · القطعة والفدان والربع من اللافتة في الأرض",
+  metaItems:dayMeta, sendNote:sendD, body:`
+  <div class="sec"><h3>القطع <em>كود القطعة واسمها وعدد الفدادين فيها. الفدان مكتوب على اللافتة: F01، F02 …</em></h3>
+  <div class="pg">${PLOTS.map(([c,n,q])=>`<span class="circ"><span>${n} <small>${FED[q]} فدان</small></span><span class="c">${q}</span></span>`).join("")}</div></div>
+  <div class="sec"><h3>اتقطع منين النهارده <em>سطر لكل ربع اتقطع منه</em></h3>
+  <table class="log">${head([["القطعة","الكود أو الاسم",'34mm'],["الفدان","F__",'18mm'],["الربع","علّم واحد",'44mm'],["عدد السباطات","",'22mm'],"ملاحظات"])}
+  <tbody>${rows(5,()=>`<td></td><td class="ltr">F</td><td><div class="ticks">${["Q1","Q2","Q3","Q4"].map(q=>`<span class="circ ltr">${q}</span>`).join("")}</div></td><td></td><td></td>`,"7.4mm")}
+  <tr class="tot"><td class="l" colspan="3">مجموع السباطات المقطوعة</td><td></td><td class="sh"></td></tr></tbody></table></div>
+  <div class="sec"><h3>البيع <em>سطر لكل عربية · متوسط وزن السباطة = القائم ÷ عدد السباطات · الصافي = القائم × ٠٫٨ لو مش في البون</em></h3>
+  <table class="log">${head([["العربية","د / ن / ب",'14mm'],["عدد السباطات","",'15mm'],["الوزن القائم","كجم",'19mm'],["الوزن الصافي","كجم",'19mm'],["متوسط وزن السباطة","كجم",'17mm'],["السعر","",'30mm'],["إجمالي البيع","جنيه",'21mm'],["التاجر",""],["اتدفع","جنيه",'17mm'],["رقم البون","",'15mm']])}
+  <tbody>${rows(5,()=>empty(5)+`<td><div class="ticks"><span><span class="box"></span>للكيلو</span><span><span class="box"></span>للطن</span></div></td>`+empty(4),"8.6mm")}</tbody></table>
+  <div class="legend"><b>العربية:</b><span><b>د</b> دبابة</span><span><b>ن</b> نقل</span><span><b>ب</b> عربية دبل</span></div></div>
+  <div class="sec"><h3>إجمالي اليوم</h3>
+  <div class="totbox"><div>عدد السباطات</div><div>الوزن القائم<small>كجم</small></div><div>الوزن الصافي<small>كجم</small></div><div>متوسط وزن السباطة<small>كجم</small></div>
+  <div>إجمالي البيع<small>جنيه</small></div><div>اتدفع<small>جنيه</small></div><div>الباقي<small>جنيه</small></div><div>متوسط السعر<small>للكيلو</small></div></div></div>
+  <div class="sec"><h3>مصاريف القطيع</h3>
+  <table class="log">${head(["البيان",["عدد النقلات","",'26mm'],["سعر النقلة","جنيه",'26mm'],["المبلغ","جنيه",'26mm']])}
+  <tbody><tr><td class="l">قطيع دبابة <small>عادة ١٬٠٠٠ – ١٬٢٥٠</small></td>${empty(3)}</tr><tr><td class="l">قطيع عربية دبل <small>عادة ٢٬٠٠٠</small></td>${empty(3)}</tr><tr><td class="l">سباطات مرفوضة أو تالفة <small>العدد في خانة النقلات</small></td><td></td><td class="sh"></td><td class="sh"></td></tr></tbody></table></div>`}));
+
+/* D2. daily field work, simple: circle the job, count the crew, rates and transport */
+const OPS_CIRC = ["نقد","فرز","توريق","تربيط","تكييس","عزيق","شيل عفش","لم عفش","شيل عيان","شيل جدول","حش جدول","رش","تسميد","ري","زراعة","قطيع موز"];
+const TRANS = [["بدون",""],["العربية","٧٠٠"],["تروسيكل","٥٠٠"],["العربية + تروسيكل","١٢٠٠"]];
+const opBlock = i => `<div class="opblk">
+  <div class="line"><span class="lb n">عملية ${["١","٢","٣","٤"][i]}</span><span class="lb">اسم الأرض:</span><span class="blank" style="--w:46mm"></span><span class="lb">كود القطعة:</span><span class="blank" style="--w:22mm"></span></div>
+  <div class="line"><span class="lb">نوع الشغل، علّم:</span>${OPS_CIRC.map(o=>`<span class="circ">${o}</span>`).join("")}<span class="circ">تانية: <span class="blank" style="--w:20mm;height:4mm"></span></span></div>
+  <div class="line"><span class="lb">رجالة:</span><span class="fill" style="--w:12mm"></span><span>× يومية</span><span class="fill" style="--w:15mm"></span><span>=</span><span class="fill" style="--w:20mm"></span>
+    <span class="lb" style="margin-inline-start:4mm">ستات:</span><span class="fill" style="--w:12mm"></span><span>× يومية</span><span class="fill" style="--w:15mm"></span><span>=</span><span class="fill" style="--w:20mm"></span></div>
+  <div class="line"><span class="lb">المواصلات:</span>${TRANS.map(([t,p])=>`<span class="circ">${t}${p?` <small>${p}</small>`:""}</span>`).join("")}<span>المبلغ</span><span class="fill" style="--w:16mm"></span>
+    <span class="lb" style="margin-inline-start:auto">إجمالي العملية:</span><span class="fill" style="--w:24mm;border-width:2px"></span><span>جنيه</span></div>
+  <div class="line"><span class="lb">مواد اتصرفت:</span><span class="blank" style="--w:80mm"></span><span class="lb">الحالة:</span><span class="circ">تم</span><span class="circ">جاري</span></div>
+</div>`;
+SHEETS.push(sheet({id:"ops-d", kind:"d", code:"FT-D2", title:"يومية الشغل في الأرض", sub:"ورقة لكل يوم · علّم نوع الشغل واكتب العدد واليومية · يومية الرجالة عادة ٢٥٠ والستات ٢٠٠",
+  metaItems:dayMeta, sendNote:sendD.replace(" صوّر البونات معاها.",""), body:`
+  ${[0,1,2,3].map(opBlock).join("")}
+  <div class="sec"><h3>إجمالي اليوم</h3>
+  <div class="totbox"><div>عدد الرجالة</div><div>عدد الستات</div><div>المواصلات<small>جنيه</small></div><div>إجمالي المدفوع<small>جنيه</small></div></div></div>
+  <div class="sec"><h3>مطلوب بكره <em>علّم الدايرة: <span class="dot pr-red"></span> عاجل · <span class="dot pr-amber"></span> قريب · <span class="dot pr-green"></span> روتيني</em></h3>
+  <table class="log">${head([["الأولوية","",'22mm'],"الشغل المطلوب",["اسم الأرض","",'40mm']])}
+  <tbody>${rows(2,()=>`<td><span class="dot pr-red"></span> <span class="dot pr-amber"></span> <span class="dot pr-green"></span></td><td></td><td></td>`)}</tbody></table></div>`}));
 
 /* 1. cattle, weekly */
 SHEETS.push(sheet({id:"cattle-w", kind:"w", code:"FV-W1", title:"سجل الماشية اليومي", sub:"فترة فيتا · الجرن · عجول عرباوي · الراعي: محمد رمضان",
@@ -287,7 +346,7 @@ SHEETS.push(sheet({id:"store-h", kind:"h", code:"ST-H1", title:"كارت حرك�
 
 /* ---------- render ---------- */
 const desk = document.getElementById("desk"), toc = document.getElementById("toc");
-const KIND = {w:"أسبوعي", m:"شهري", h:"يتعلق في المخزن"};
+const KIND = {d:"يومي", w:"أسبوعي", m:"شهري", h:"يتعلق في المخزن"};
 desk.innerHTML = SHEETS.map(s=>`<section class="wrap" id="${s.id}" data-k="${s.kind}"><div class="cap"><b>${s.title}</b><span class="ltr">${s.code}</span><span>${KIND[s.kind]}</span></div>${s.html}</section>`).join("");
 toc.innerHTML = SHEETS.map(s=>`<a href="#${s.id}">${s.title}</a>`).join("");
 const setF = f => { document.querySelectorAll(".chips button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.f===f)));
