@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fetra</title>
+<meta name="apple-mobile-web-app-title" content="Fetra">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#14605a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<link rel="icon" href="../icon-512.png">
+<style>
+  :root{--bg:#14605a;--fg:#fff;--btn:#e8bf3a;--btnfg:#1d2a22}
+  body{margin:0;font-family:-apple-system,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;display:grid;place-items:center;text-align:center;padding:24px 16px;box-sizing:border-box}
+  main{max-width:360px;width:100%}
+  img{width:96px;height:96px;border-radius:22px}
+  h1{margin:12px 0 4px}
+  p{opacity:.9;line-height:1.45;margin:8px 0}
+  input{font:inherit;font-size:18px;width:100%;box-sizing:border-box;padding:14px;border-radius:12px;border:0;margin-top:14px;text-align:center}
+  button{font:inherit;font-size:18px;font-weight:700;width:100%;padding:14px;border-radius:12px;border:0;background:var(--btn);color:var(--btnfg);margin-top:10px;cursor:pointer}
+  label{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:10px;font-size:15px}
+  .err{color:#ffd9d4;font-weight:600;min-height:1.4em}
+  .ar{direction:rtl;font-size:15px}
+</style>
+</head>
+<body>
+<main id="gate" hidden>
+  <img src="../apple-touch-icon.png" alt="">
+  <h1>Fetra</h1>
+  <p>Offline copy. Works with no internet once it has opened here one time.</p>
+  <p class="ar">نسخة بتشتغل من غير نت بعد أول فتح.</p>
+  <form id="f">
+    <input id="pw" type="password" autocomplete="current-password" placeholder="Passcode · الرقم السري" aria-label="Passcode" required>
+    <label><input id="keep" type="checkbox" checked style="width:auto;margin:0"> Remember on this device · افتكره</label>
+    <button type="submit">Open Fetra · افتح</button>
+  </form>
+  <p class="err" id="err" role="alert"></p>
+</main>
+<script>
+/* The app and its records are locked (AES-GCM, key from the passcode) so the public site shows nothing readable.
+   The service worker keeps this page and the locked file on the device, so it opens offline. */
+const ITER = 310000, KEY = "fetraOffline.pass";
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+const $ = id => document.getElementById(id);
+function getStore(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
+function setStore(k,v){ try{ v==null ? localStorage.removeItem(k) : localStorage.setItem(k,v); }catch(_){} }
+async function unlock(pass){
+  const r = await fetch("app.enc", {cache:"no-cache"}).catch(() => caches.match("app.enc"));
+  if(!r || !r.ok) throw new Error("nofile");
+  const buf = new Uint8Array(await r.arrayBuffer());
+  const salt = buf.slice(0,16), iv = buf.slice(16,28), ct = buf.slice(28);
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]);
+  const key = await crypto.subtle.deriveKey({name:"PBKDF2", salt, iterations:ITER, hash:"SHA-256"}, base, {name:"AES-GCM", length:256}, false, ["decrypt"]);
+  let plain;
+  try{ plain = await crypto.subtle.decrypt({name:"AES-GCM", iv}, key, ct); }catch(_){ throw new Error("badpass"); }
+  return new TextDecoder().decode(plain);
+}
+async function open(pass, keep){
+  const html = await unlock(pass);
+  setStore(KEY, keep ? pass : null);
+  document.open(); document.write(html); document.close();
+}
+function showGate(msg){ $("gate").hidden = false; $("err").textContent = msg || ""; $("pw").focus(); }
+const why = e => e.message==="badpass" ? "Wrong passcode · الرقم السري غلط"
+  : e.message==="nofile" ? "Open this page once with internet first · افتح الصفحة مرة بالنت الأول" : "Could not open: " + e.message;
+$("f").onsubmit = ev => { ev.preventDefault(); $("err").textContent = "Opening… · بيفتح…"; open($("pw").value.trim(), $("keep").checked).catch(e => showGate(why(e))); };
+const saved = getStore(KEY);
+if(saved) open(saved, true).catch(e => { if(e.message==="badpass") setStore(KEY, null); showGate(why(e)); });
+else showGate();
+</script>
+</body>
+</html>
