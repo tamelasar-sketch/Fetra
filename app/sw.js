@@ -1,5 +1,5 @@
-/* Fetra offline copy: keeps the app on the device. Build 20261025T114636Z-eb451ed8 */
-const CACHE = "fetra-20261025T114636Z-eb451ed8", FONTS = "fetra-fonts";
+/* Fetra offline copy: keeps the app on the device. Build 20261025T120541Z-8ac26989 */
+const CACHE = "fetra-20261025T120541Z-8ac26989", FONTS = "fetra-fonts";
 const FILES = ["./", "index.html", "app.enc", "manifest.webmanifest", "../icon-512.png", "../apple-touch-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("fetra-") && k!==CACHE && k!==FONTS).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

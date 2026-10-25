@@ -74,7 +74,7 @@ function localDb(){
   }
   function write(p, data){
     if(data===null) delete st.docs[p]; else st.docs[p] = clone(data);
-    st.pending[p] = stamp(); persist(); fire(p); badge();
+    st.pending[p] = stamp(); persist(); fire(p); badge(); nag();
   }
   const listen = (map, key, fn) => { (map[key] = map[key]||[]).push(fn); setTimeout(fn, 0); return () => { map[key] = (map[key]||[]).filter(x => x!==fn); }; };
   const rid = () => Array.from(crypto.getRandomValues(new Uint8Array(10)), b => "abcdefghijklmnopqrstuvwxyz0123456789"[b%36]).join("");
@@ -160,9 +160,29 @@ async function sendChanges(){
   if(!paths.length){ say(T("Nothing new to send.","مفيش تعديلات جديدة.")); return; }
   const changes = paths.map(p => ({path:p, at:st.pending[p], data: st.docs[p] ? st.docs[p] : null}));
   const ok = await giveFile(`Fetra-changes-${day()}.json`, JSON.stringify({kind:"fetra-changes", at:stamp(), changes}));
-  if(ok){ st.sentAt = stamp(); LOCAL.persist(); }
+  if(ok){ st.sentAt = stamp(); LOCAL.persist(); nag(); badge(); }
   say(ok ? T("Saved. In the main app tap Offline · Bring in changes and pick this file. Then tap Clear sent changes here.","اتحفظ. في التطبيق الأساسي اضغط «بدون نت · إدخال التعديلات» واختار الملف. بعدها اضغط «مسح التعديلات المبعوتة» هنا.") : "");
 }
+/* changes made since the last "Save changes" */
+const unsaved = () => LOCAL ? Object.values(LOCAL.st.pending).filter(at => at > (LOCAL.st.sentAt||"")).length : 0;
+/* the reminder strip under the header: offline copy with unsaved changes, or the main app with the internet gone */
+function nag(){
+  const top = document.querySelector("header.top"); if(!top) return;
+  let bar = document.getElementById("offWarn");
+  const n = unsaved(), net = navigator.onLine;
+  const show = CFG ? n>0 : !net;
+  if(!show){ if(bar) bar.remove(); return; }
+  if(!bar){ bar = document.createElement("div"); bar.id = "offWarn"; bar.className = "wrap"; top.insertAdjacentElement("afterend", bar); }
+  bar.innerHTML = `<div class="ask" role="status" style="display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:10px">
+    <span style="flex:1;min-width:200px">${CFG
+      ? `<b>${net?T("Not saved","لسه ما اتحفظش"):T("No internet","مفيش نت")}</b> · ${T(`${n} change${n===1?" is":"s are"} only on this device. Tap Save before you close the app, so they can go into the main app.`, `${n} تعديل موجودين على الجهاز ده بس. اضغط «حفظ» قبل ما تقفل التطبيق عشان يدخلوا التطبيق الأساسي.`)}`
+      : `<b>${T("No internet","مفيش نت")}</b> · ${T("What you add now may not be saved. Use the offline copy (Offline button), then tap Save there.","اللي هتضيفه دلوقتي ممكن ما يتحفظش. استخدم النسخة بدون نت (زرار بدون نت) واضغط «حفظ» هناك.")}`}</span>
+    ${CFG?`<button class="btn sm" id="offWarnSave" type="button">${T("Save","حفظ")}</button>`:""}</div>`;
+  const b = document.getElementById("offWarnSave"); if(b) b.onclick = sendChanges;
+}
+/* closing with unsaved changes: computers show "Leave site?" and stay open on Cancel.
+   Phones never ask when an app is swiped away, so the next opening brings up the Save sheet instead. */
+window.addEventListener("beforeunload", e => { if(CFG && unsaved()){ e.preventDefault(); e.returnValue = ""; return ""; } });
 function clearSent(){
   if(!confirm(T("Only clear once the changes are in the main app. Clear the list?","امسح بس لو التعديلات دخلت التطبيق الأساسي. تمسح القائمة؟"))) return;
   LOCAL.st.pending = {}; LOCAL.persist(); badge(); say(T("Cleared.","اتمسحت."));
@@ -202,7 +222,7 @@ function sheet(){
       <ul style="margin:8px 0;padding-inline-start:18px">
         <li>${T("Internet now","النت دلوقتي")}: <b>${net?T("on","شغال"):T("off","مقطوع")}</b></li>
         <li>${T("Data from the main app","البيانات من التطبيق الأساسي")}: <b>${esc(fmt(st.from))}</b></li>
-        <li>${T("Changes not yet in the main app","تعديلات لسه ما دخلتش التطبيق الأساسي")}: <b>${n}</b></li>
+        <li>${T("Changes not yet in the main app","تعديلات لسه ما دخلتش التطبيق الأساسي")}: <b>${n}</b>${unsaved()?` · <b style="color:var(--bad)">${T(`${unsaved()} not saved yet`,`${unsaved()} لسه ما اتحفظوش`)}</b>`:""}</li>
         <li>${T("App version","نسخة التطبيق")}: <b>${esc(fmt(CFG.builtAt))}</b></li>
       </ul>
       <div class="links" style="flex-wrap:wrap;gap:8px">${btn("offSend","Save changes for the main app","حفظ التعديلات للتطبيق الأساسي")}${btn("offFresh","Load fresh data","تحميل بيانات جديدة",1)}${n?btn("offClear","Clear sent changes","مسح التعديلات المبعوتة",1):""}</div>
@@ -225,16 +245,18 @@ function sheet(){
   on("offClose", close); on("offSend", sendChanges); on("offFresh", loadFresh); on("offClear", clearSent); on("offData", saveForOffline); on("offIn", bringIn);
 }
 function close(){ msg = ""; const b = document.getElementById("offBox"); if(b) b.remove(); }
-window.addEventListener("online", () => { badge(); if(document.getElementById("offBox")) sheet(); });
-window.addEventListener("offline", () => { badge(); if(document.getElementById("offBox")) sheet(); });
+window.addEventListener("online", () => { badge(); nag(); if(document.getElementById("offBox")) sheet(); });
+window.addEventListener("offline", () => { badge(); nag(); if(document.getElementById("offBox")) sheet(); });
 
 function addButton(){
   const brand = document.querySelector("header.top .brand"); if(!brand || document.getElementById("offBtn")) return;
   const b = document.createElement("button"); b.id = "offBtn"; b.type = "button"; b.className = "layoutBtn";
   b.setAttribute("data-noi18n",""); b.onclick = () => { msg = ""; sheet(); };
   const lang = document.getElementById("langBtn"); brand.insertBefore(b, lang ? lang.nextSibling : null);
-  badge();
-  if(document.documentElement) new MutationObserver(badge).observe(document.documentElement, {attributes:true, attributeFilter:["dir","lang"]});
+  badge(); nag();
+  /* left last time without saving: ask first thing */
+  if(CFG && unsaved()) setTimeout(() => { msg = T("You closed the app last time with changes not saved. Tap Save changes for the main app.","قفلت التطبيق آخر مرة من غير ما تحفظ. اضغط «حفظ التعديلات للتطبيق الأساسي»."); sheet(); }, 1500);
+  if(document.documentElement) new MutationObserver(() => { badge(); nag(); }).observe(document.documentElement, {attributes:true, attributeFilter:["dir","lang"]});
 }
 if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", addButton); else addButton();
 setTimeout(addButton, 0);
