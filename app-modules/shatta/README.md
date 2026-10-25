@@ -1,0 +1,7 @@
+# Shatta, the voice assistant (25 Oct 2026)
+
+- `shatta.js`: a round mic button floating over every page (drag it anywhere, it remembers the spot per device). Tap it, say "Shatta" then a command. Saying only "Shatta" makes it answer "Yes?" and listen again. Follows the app's Arabic switch (listens in ar-EG or en-US, answers out loud in the same language). The ع / EN chip in the panel flips the whole app's language; the speaker icon mutes the voice.
+- Commands: go to a company (Group, Terra, Vita, Familia), a step (Today, Money, Production, Future, Inbox) or any page (crop pages, plots, feed store, cash, bank, to-do…). Questions answered from the app's numbers: what's urgent, weather today/tomorrow, banana sales this month, herd size, lowest cash, owed to Baligh, read my to-dos. "Add a to-do / remind me to…" writes to `todos` with `src:"Shatta"` and an automatic colour: red (urgent words: urgent, today, now, sick, vet…), amber (soon, tomorrow, this week…), green otherwise (routine). Farm picked from the words (vet/cattle/feed → Vita, family/bank → Familia, else the current company, Terra for the Group).
+- Anything else goes to Claude through the page's `sample` capability with a snapshot of today's numbers, which can answer, pick a page, or add a to-do.
+- No microphone (blocked frame or browser without speech recognition): the same panel takes typed commands and still speaks the answer.
+- Apply last: `python3 patch_shatta.py <app.html> .` (after patch_i18n.py; safe to re-run). `window.fetraShatta.run("open vita money")` runs a command from code.
